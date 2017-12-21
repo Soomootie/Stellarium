@@ -2,69 +2,84 @@ import time
 
 from bittrex.bittrex import Bittrex, API_V1_1
 from poloniex import Poloniex
-from _datetime import date
+import datetime
 
-if __name__ == "__main__":
+API = API_V1_1
+DATE = datetime.datetime.now()
+TRADE = ''
+POLONIEX = 'POLONIEX'
+BITTREX = 'BITTREX'
+FORMAT = '{0:.8f}'
+
+def poloniex(market = 'BTC_STR'):
+    polo = Poloniex();
+    ticket_poloniex = polo.returnTicker()[market]
+    print(ticket_poloniex)
+    return float(ticket_poloniex['lowestAsk']) , float(ticket_poloniex['highestBid'])
     
-    period = 1
+def bittrex(market = 'BTC-XLM'):
+    global API
+    bittrex = Bittrex(None, None, api_version = API)
+    ticket_bittrex = bittrex.get_ticker(market)['result']
+    print(FORMAT.format(ticket_bittrex))
+    ask_Bittrex = ticket_bittrex['Ask']
+    bid_Bittrex = ticket_bittrex['Bid']
+    return ask_Bittrex, bid_Bittrex
+
+def main():
+    global TRADE, POLONIEX, BITTREX, DATE
     
-    MARGIN = 0.00000007
+    period = 1 
+    MARGIN = 6
+    ICR = 1
     
-        # Start money
-    BTC_POLONIEX = 0.0023
-    BTC_BITTREX = 0.0023
-    XLM_POLONIEX = 0
-    XLM_BITTREX = 0
-    
-        # Money's position
-    TRADE = ''
-    POLONIEX = 'POLONIEX'
-    BITTREX = 'BITTREX'
-    
+    TIMES = 10
+
         # Opening File
-    FILE = open("TEST1.txt","a")
+    FILE = open("TEST1.txt","a", 1)
+    FILE.write( str(DATE) + '\t For ' + str(TIMES) + ' times \n\n')
     
-    TEST = 4000
-    
-    while TEST > 0:    
-            # Poloniex
-        polo = Poloniex()
-        ticket_poloniex = polo.returnTicker()['BTC_STR']
-        print(ticket_poloniex)
-        ask_Poloniex = float(ticket_poloniex['lowestAsk'])      # To sell
-        bid_Poloniex = float(ticket_poloniex['highestBid'])     # To buy
-        
-            # Bittrex
-        my_bittrex = Bittrex(None, None, api_version=API_V1_1)
-        ticket_bittrex = my_bittrex.get_ticker('BTC-XLM')['result']
-        print(ticket_bittrex)
-        ask_Bittrex = ticket_bittrex['Ask']     # To buy
-        bid_Bittrex = ticket_bittrex['Bid']     # To sell
-        print('{0:.8f}'.format(ask_Bittrex))
+    while TIMES > 0 :
+        ask_Poloniex , bid_Poloniex = poloniex()
+        ask_Bittrex , bid_Bittrex = bittrex()
         
         
-        BUY_ON_POLONIEX = ask_Poloniex - bid_Bittrex + MARGIN
-        BUY_ON_BITTREX = ask_Bittrex - bid_Poloniex + MARGIN
-        print('POLONIEX : ' + '{0:.8f}'.format(BUY_ON_POLONIEX))
-        print('BITTREX : '  + '{0:.8f}'.format(BUY_ON_BITTREX))
+        for i in range(MARGIN, MARGIN*3, ICR) :
+            I = i * 0.00000001
+            BUY_ON_POLONIEX = ask_Poloniex - bid_Bittrex + i * 0.00000001
+            BUY_ON_BITTREX = ask_Bittrex - bid_Poloniex + i * 0.00000001
+            
+            if BUY_ON_BITTREX < 0 or BUY_ON_POLONIEX < 0 :
+                print('POLONIEX : ' + FORMAT.format(BUY_ON_POLONIEX) + ' with : ' + FORMAT.format(I))
+                print('BITTREX : '  + FORMAT.format(BUY_ON_BITTREX) + ' with : ' + FORMAT.format(I))
            
-        if BUY_ON_POLONIEX < 0 :
-            print("TRY POLONIEX")
-            if TRADE == '' or TRADE != POLONIEX :
+            if BUY_ON_POLONIEX < 0 :
+                print("TRY POLONIEX")
+                #if TRADE == '' or TRADE != POLONIEX :
                 print("WRITE POLONIEX")
                 TRADE = POLONIEX
                 FILE.write("ASK_POLONIEX : " + str(ask_Poloniex)
-                           + " BID_BITTREX : " + str(bid_Bittrex) + "\n")
-        elif BUY_ON_BITTREX < 0 :
-            print("TRY BITTREX")
-            if TRADE == '' or TRADE != BITTREX :
+                           + " BID_BITTREX : " + str(bid_Bittrex) + ' with : ' + FORMAT.format(I) + "\n")
+            elif BUY_ON_BITTREX < 0 :
+                print("TRY BITTREX")
+                #if TRADE == '' or TRADE != BITTREX :
                 print("WRITE BITTREX")
                 TRADE = BITTREX 
                 FILE.write("ASK_BITTREX : " + str(ask_Bittrex)
-                           + " BID_POLONIEX : " + str(bid_Poloniex) + "\n")
+                           + " BID_POLONIEX : " + str(bid_Poloniex) + ' with : ' + FORMAT.format(I) + "\n")
 
-        print("TEST : " + str(TEST))
-        TEST -= 1
+        if BUY_ON_BITTREX < 0 or BUY_ON_POLONIEX < 0 :
+            FILE.write("\n")
+        print("TIME : " + str(TIMES))
+        TIMES -= 1
         time.sleep(period)
     
+    END = datetime.datetime.now()    
+    FILE.write('\nEND AT ' + str(END) + '\n\n')
     FILE.close()
+    
+if __name__ == "__main__":
+    main()    
+              
+        
+    
