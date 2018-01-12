@@ -214,7 +214,7 @@ def setupArgs() :
 		Return the arguments.
 	"""
 	parser = argparse.ArgumentParser(description='Poloniex/Bittrex Arbitrage Bot')
-	parser.add_argument('-s', '--symbol', default='XRP', type=str, required=False, help='symbol of your target coin [default: XMR]')
+	parser.add_argument('-s', '--symbol', default='SC', type=str, required=False, help='symbol of your target coin [default: XMR]')
 	parser.add_argument('-b', '--basesymbol', default='BTC', type=str, required=False, help='symbol of your base coin [default: BTC]')
 	parser.add_argument('-r', '--rate', default=1.0005, type=float, required=False, help='minimum price difference, 1.01 is 1 percent price difference (exchanges charge .05 percent fee) [default: 1.01]')
 	parser.add_argument('-m', '--max', default=0.0, type=float, required=False, help='maximum order size in target currency (0.0 is unlimited) [default: 0.0]')
@@ -269,7 +269,7 @@ def main(argv):
 			"""
 			return POLO if _buyExchange != POLO else BIT
 		### END exchange()		
-		Acurrency = 'XLM'
+		Acurrency = 'XRP'
 
 		def setTradesize(newTradesize) :
 			global tradesize
@@ -418,7 +418,6 @@ def main(argv):
 			_currencyPairB = currencyPair(Acurrency, BIT)
 			s_bit = bittrexAPI.getmarketsummary(_currencyPairB)
 			s_polo = poloniexAPI.api_query(TICK)
-			print(s_polo[_currencyPairP])
 			logger.debug("\n{:8} : {:.8f}\n{:8} : {:.8f}".format(BIT, float(s_bit[0]['Ask']), POLO, float(s_polo[_currencyPairP]["lowestAsk"])))
 			
 			# vend le XLM sur poloniex/bittrex
@@ -436,7 +435,6 @@ def main(argv):
 			# buy XLM with BTC on poloniex/bittrex
 			buyBaseWithCurrency(amountCurrency, getTargetCurrency(args))
 			
-			
 			logger.info("\nNouveau : \nBittrex BTC :  {:.8f} | Bittrex LUMEN: {:.8f}\nPoloniex BTC : {:.8f} | Poloniex LUMEN {:.8f}".format(
 					getBittrexBaseBalance(), getBittrexTargetBalance(), getPoloniexBaseBalance(), getPoloniexTargetBalance()))
 	### END reBalance()
@@ -453,7 +451,7 @@ est que la différence de prix entre le BTC et XRP des 2 plateformes est très f
 			"""
 			return POLO if _buyExchange != POLO else BIT
 		### END exchange()
-		
+
 		arbitrage = _bid/_ask
 		print('DEBUG: Current Rate: {} | Minimum Rate: {}'.format(arbitrage, args.rate))
 		
@@ -572,7 +570,6 @@ est que la différence de prix entre le BTC et XRP des 2 plateformes est très f
 		if i == 40:
 			time.sleep(SEC)
 			exit()
-			break;
 		i += 1
 		print("=================DEBUT=====================")
 		# Query Poloniex Prices
