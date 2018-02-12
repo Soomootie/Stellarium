@@ -5,22 +5,22 @@
 class Wallet(object):
 
     def __init__(self, targetBalance=0, baseBalance=0, name=""):
-        self.targetBalance = targetBalance
-        self.baseBalance = baseBalance
-        self.transition = 0.0
-        self.name = name
+        self.__targetBalance = targetBalance
+        self.__baseBalance = baseBalance
+        self.__transition = 0.0
+        self.__name = name
 
     def getTargetBalance(self):
-        return self.targetBalance
+        return self.__targetBalance
 
     def getBaseBalance(self):
-        return self.baseBalance
+        return self.__baseBalance
 
     def getTransition(self):
-        return self.transition
+        return self.__transition
 
     def getName(self):
-        return self.name
+        return self.__name
 
     def setTargetBalance(self, newTargetBalance=0):
         """
@@ -28,7 +28,7 @@ class Wallet(object):
         :param newTargetBalance:
         :return:
         """
-        self.targetBalance = newTargetBalance
+        self.__targetBalance = newTargetBalance
 
     def setBaseBalance(self, newBaseBalance=0):
         """
@@ -36,7 +36,7 @@ class Wallet(object):
         :param newBaseBalance:
         :return:
         """
-        self.baseBalance = newBaseBalance
+        self.__baseBalance = newBaseBalance
 
     def setTransition(self, newTransition=0):
         """
@@ -44,4 +44,4 @@ class Wallet(object):
         :param newTransition:
         :return:
         """
-        self.transition = newTransition
+        self.__transition = newTransition

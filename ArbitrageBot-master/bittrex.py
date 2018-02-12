@@ -117,6 +117,12 @@ class Bittrex(object):
 
             self.last_call = time.time()
 
+    def set_api_key(self, api_key):
+        self.api_key = api_key
+
+    def set_api_secret(self, api_secret):
+        self.api_secret = api_secret
+
     def _api_query(self, protection=None, path_dict=None, options=None):
         """
         Queries Bittrex

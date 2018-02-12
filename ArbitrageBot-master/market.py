@@ -5,24 +5,24 @@
 class Market(object):
 
     def __init__(self, baseCurrency="", targetCurrency="", separator="_", aCurrency=""):
-        self.baseCurrency = baseCurrency
-        self.targetCurrency = targetCurrency
-        self.aCurrency = aCurrency
-        self.separator = separator
-        self.pair = '{}{}{}'.format(self.baseCurrency, self.separator, self.targetCurrency)
-        self.aPair = '{}{}{}'.format(self.baseCurrency, self.separator, self.aCurrency)
+        self.__baseCurrency = baseCurrency
+        self.__targetCurrency = targetCurrency
+        self.__aCurrency = aCurrency
+        self.__separator = separator
+        self.__pair = '{}{}{}'.format(self.__baseCurrency, self.__separator, self.__targetCurrency)
+        self.__aPair = '{}{}{}'.format(self.__baseCurrency, self.__separator, self.__aCurrency)
 
     def getBaseCurrency(self):
-        return self.baseCurrency
+        return self.__baseCurrency
 
     def getTargetCurrency(self):
-        return self.targetCurrency
+        return self.__targetCurrency
 
     def getAcurrency(self):
-        return self.aCurrency
+        return self.__aCurrency
 
     def getPair(self):
-        return self.pair
+        return self.__pair
 
     def getAPair(self):
-        return self.aPair
+        return self.__aPair
