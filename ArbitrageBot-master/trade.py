@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 from wallet import Wallet
 from market import Market
+from logger import Logger
 from configparser import ConfigParser, NoSectionError
 
 
@@ -41,10 +42,14 @@ def loadConfigFile(logger, args, name=""):
 class Trade(object):
 
     def __init__(self, logger, args, market, wallet):
-        self.wallet = wallet
-        self.name = wallet.name
-        self.market = market
-        self.publicKey, self.secretKey = loadConfigFile(logger, args, self.name)
+        if isinstance(wallet, Wallet):
+            self.wallet = wallet
+            self.name = wallet.name
+        if isinstance(market, Market):
+            self.market = market
+        if isinstance(logger, Logger):
+            self.publicKey, self.secretKey = loadConfigFile(logger.getLoger(), args, self.name)
+            self.logger = logger.getLoger()
 
     def getMarket(self):
         return self.market
@@ -57,3 +62,6 @@ class Trade(object):
 
     def getSecretKey(self):
         return self.secretKey
+
+    def getLogger(self):
+        return self.logger

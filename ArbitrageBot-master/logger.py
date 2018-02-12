@@ -46,9 +46,6 @@ def createFormatter():
     return logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 
 
-
-
-
 class Logger(object):
 
     def __init__(self, level, args):
@@ -68,3 +65,6 @@ class Logger(object):
 
     def writeError(self, buyExchange, trade, pair):
         self.logger.error('Failed to get {} {}s for {}, skipping order attempt'.format(buyExchange, trade, pair))
+
+    def getLoger(self):
+        return self.logger

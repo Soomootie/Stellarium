@@ -1,17 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Imports
-import argparse
-import sys
-import logger
+import traceback
+from utils import *
+from logger import Logger
 from wallet import Wallet
 from market import Market
 from trade import Trade
-
 from poloniex import Poloniex
 from bittrex import *
-
-### END imports
 
 ## VARIABLES STATIQUES
 # rebalanced ratio
@@ -28,60 +24,28 @@ SEC = 3
 
 ### END Variables statiques
 
-def setupArgs():
-    """
-        Setup Argument Parser.
-        Return the arguments.
-    """
-    parser = argparse.ArgumentParser(description='Poloniex/Bittrex Arbitrage Bot')
-    parser.add_argument('-s', '--symbol', default='XLM', type=str, required=False,
-                        help='symbol of your target coin [default: XLM]')
-    parser.add_argument('-b', '--basesymbol', default='BTC', type=str, required=False,
-                        help='symbol of your base coin [default: BTC]')
-    parser.add_argument('-r', '--rate', default=1.0005, type=float, required=False,
-                        help='minimum price difference, 1.01 is 1 percent price difference [default: 1.01]')
-    parser.add_argument('-m', '--max', default=0.0, type=float, required=False,
-                        help='maximum order size in target currency (0.0 is unlimited) [default: 0.0]')
-    parser.add_argument('-i', '--interval', default=1, type=int, required=False,
-                        help='seconds to sleep between loops [default: 1]')
-    parser.add_argument('-c', '--config', default='arbbot.conf', type=str, required=False,
-                        help='config file [default: arbbot.conf]')
-    parser.add_argument('-l', '--logfile', default='arbbot.log', type=str, required=False,
-                        help='file to output log data to [default: arbbot.log]')
-    parser.add_argument('-d', '--dryrun', action='store_true', required=False,
-                        help='simulates without trading (API keys not required)')
-    parser.add_argument('-v', '--verbose', action='store_true', required=False,
-                        help='enables extra console messages (for debugging)')
-    return parser.parse_args()
-
-
 def main():
     # global _buyExchange, tradesize
 
-    def setTradesize(newTradesize):
-        global tradesize
-        tradesize = newTradesize
-
-    def getTradesize():
-        return tradesize
-
     args = setupArgs()
 
-    Acurrency = 'XRP'
-    bittrexMarket = Market(args.basesymbol, args.symbol, Acurrency)
-    poloniexMarket = Market(args.basesymbol, args.symbol if args.symbol != "XLM" else "STR", Acurrency, "-")
+    # Logger
+    _Logger = Logger('DEBUG', args)
+    _logger = _Logger.getLoger()
+
+    # Markets
+    bittrexMarket = Market(args.basesymbol, args.symbol, "-", args.Symbol)
+    poloniexMarket = Market(args.basesymbol, args.symbol if args.symbol != "XLM" else "STR", "_", args.Symbol)
 
     # Wallets
-    bittrexWallet = Wallet(274.69, 0.126033)  # 200$ / 200$
-    poloniexWallet = Wallet(274.69, 0.0126033)  # 200$ / 200$
+    bittrexWallet = Wallet(274.69, 0.126033, 'bittrex')  # 200$ / 200$
+    poloniexWallet = Wallet(274.69, 0.0126033, 'poloniex')  # 200$ / 200$
 
-    bittrexTrade = Trade(logger, args, bittrexMarket, bittrexWallet)
-    poloniexTrade = Trade(logger, args, poloniexMarket, poloniexWallet)
+    bittrexTrade = Trade(_Logger, args, bittrexMarket, bittrexWallet)
+    poloniexTrade = Trade(_Logger, args, poloniexMarket, poloniexWallet)
 
-    w = bittrexTrade.getMarket()
-
-    Logger = logger.Logger('DEBUG', args)
-    _logger = Logger.logger
+    bittrexAPI = Bittrex(bittrexTrade.getPublicKey(), bittrexTrade.getSecretKey())
+    poloniexAPI = Poloniex(poloniexTrade.getPublicKey(), poloniexTrade.getSecretKey())
 
     # Log Startup Settings
     _logger.info(
@@ -91,24 +55,7 @@ def main():
     if args.dryrun:
         _logger.info("Dryrun Mode Enabled (will not trade)")
 
-    bittrexAPI, poloniexAPI = Bittrex(bittrexTrade.publicKey, bittrexTrade.secretKey), Poloniex(poloniexTrade.publicKey,
-                                                                                                poloniexTrade.secretKey)
-
     def reBalance(_buyExchange, arbitrage):
-
-        def exchange(_buyExchange=_buyExchange):
-            """
-                Return the "opposite" of _buyExchange.
-            """
-            return POLO if _buyExchange != POLO else BIT
-
-        ### END exchange()
-
-        def transferInfo(currency, trade : Trade, receiver):
-            _logger.warning(
-                "Transfert de {:12.8f} {:3} de {} vers {}".format(targetBalance, (trade.getMarket()), receiver, receiver))
-
-        ### END transferInfo
 
         def tradeInfo(currency, trade, sender, amount, price):
             _exchange = exchange(sender)
@@ -120,22 +67,6 @@ def main():
                                                                                   total, getBaseCurrency(args)))
 
         ### END tradeInfo()
-
-        def transferTarget():
-            if _buyExchange == POLO:
-                setTradesize(poloniexWallet.getTargetBalance())
-                bittrexWallet.setTargetBalance(bittrexWallet.getTargetBalance() + getTradesize())
-                poloniexWallet.setTargetBalance()
-                time.sleep(SEC)  # duree de l'envoi d'un portefeuille à un autre
-                transferInfo(bittrexMarket.getTargetCurrency(), bittrexWallet.getTargetBalance(), BIT)
-            if _buyExchange == BIT:
-                setTradesize(bittrexWallet.getTargetBalance())
-                poloniexWallet.setTargetBalance(poloniexWallet.getTargetBalance() + getTradesize())
-                bittrexWallet.setTargetBalance()
-                time.sleep(SEC)  # duree de l'envoi d'un portefeuille à un autre
-                transferInfo(poloniexMarket.getTargetCurrency(), poloniexWallet.getTargetBalance(), POLO)
-
-        ### END transferTarget()
 
         def sellTarget():
             if _buyExchange == POLO:
@@ -231,12 +162,10 @@ def main():
 
         ### END buyBaseWithCurrency()
 
-        # def temp() :
-
         # pas assez de btc pour acheter du xlm dans poloniex/bittrex
         if arbitrage > RATIO_REBALANCED:
             # transfert XLM polo vers XLM poloniex/bittrex
-            transferTarget()
+            transferTarget(_buyExchange)
 
             s_bit = bittrexAPI.get_marketsummary(bittrexMarket.getAcurrency())['result']
             s_polo = poloniexAPI.api_query(TICK)
@@ -248,38 +177,32 @@ def main():
             sellTarget()
 
             # !! verif le tradesize de xrp aussi
-            # achete XRP poloniex/bittrex avec BTC
-            buyACurrency(Acurrency)
+            # achète XRP poloniex/bittrex avec BTC
+            buyACurrency(args.Symbol)
 
             # XRP poloniex/bittrex envoi vers XRP bittrex/poloniex
-            sendACurrency(Acurrency)
+            sendACurrency(args.Symbol)
 
             # convert XRP poloniex/bittrex en BTC
-            amountCurrency = sellACurrency(Acurrency)
+            amountCurrency = sellACurrency(args.Symbol)
             # buy XLM with BTC on poloniex/bittrex
             buyBaseWithCurrency(amountCurrency, bittrexMarket.getTargetCurrency())
 
             _logger.info(
-                "\nNouveau : \nBittrex BTC :  {:.8f} | Bittrex LUMEN: {:.8f}\nPoloniex BTC : {:.8f} | Poloniex LUMEN {:.8f}".format(
-                    bittrexWallet.getBaseBalance(), bittrexWallet.getTargetBalance(), poloniexWallet.getBaseBalance(),
-                    poloniexWallet.getTargetBalance()))
+                "\nNouveau : \nBittrex BTC :  {:.8f} | Bittrex LUMEN: {:.8f}\nPoloniex BTC : {:.8f} | Poloniex LUMEN "
+                "{:.8f}".format(bittrexWallet.getBaseBalance(), bittrexWallet.getTargetBalance(),
+                                poloniexWallet.getBaseBalance(),
+                                poloniexWallet.getTargetBalance()))
 
     ### END reBalance()
 
     """
         Notre statégie suppose que le prix du XLM est plus bas sur Poloniex que sur Bittrex
-        est que la différence de prix entre le BTC et XRP des 2 plateformes est très faible
+        est que la différence de prix entre le BTC et XRP des 2 plates-formes est très faible
     """
 
     # trade simulation function
     def tradeSimulation(_buyExchange, _ask, _bid, _sellBalance, _buyBalance):
-        def exchange(_buyExchange=_buyExchange):
-            """
-                Return the "opposite" of _buyExchange.
-            """
-            return POLO if _buyExchange != POLO else BIT
-
-        ### END exchange()
 
         arbitrage = _bid / _ask
         print('DEBUG: Current Rate: {} | Minimum Rate: {}'.format(arbitrage, args.rate))
@@ -287,52 +210,26 @@ def main():
         def bitBook(trade):
             return bittrexAPI.get_orderbook(bittrexMarket.getPair())['result'][trade][0]["Quantity"]
 
-        ### END bitBook()
-
         def poloBook(trade):
             return poloniexAPI.returnOrderBook(poloniexMarket.getPair())[trade][0][1]
-
-        ### END bitBook()
-
-        def sellBook():
-            if _buyExchange == POLO:
-                try:
-                    print("IN SELL BOOK !")
-                    return poloBook('asks')
-                except KeyboardInterrupt:
-                    Logger.quit()
-                except:
-                    print("ERROR :", sys.exc_info()[0])
-                    _logger.writeError(POLO, 'Ask', poloniexMarket.getPair())
-                    return None
-            if _buyExchange == BIT:
-                try:
-                    print(bitBook('sell'))
-                    return bitBook('sell')
-                except KeyboardInterrupt:
-                    Logger.quit()
-                except:
-                    print("ERROR :", sys.exc_info()[0])
-                    _logger.writeError(BIT, 'Bid', bittrexMarket.getPair())
-                    return None
-
-        ### END sellBook()
 
         def buyBook():
             if _buyExchange == POLO:
                 try:
-                    return bitBook('buy')['Quantity']
+                    return bitBook('buy')
                 except KeyboardInterrupt:
-                    Logger.quit()
-                except:
+                    _Logger.quit()
+                except KeyError or TypeError:
+                    traceback.print_exc()
                     _logger.writeError(BIT, 'Ask', bittrexMarket.getPair())
                     return None
             if _buyExchange == BIT:
                 try:
                     return poloBook('bids')
                 except KeyboardInterrupt:
-                    Logger.quit()
-                except:
+                    _Logger.quit()
+                except KeyError:
+                    traceback.print_exc()
                     _logger.writeError(POLO, 'Bid', poloniexMarket.getPair())
                     return None
 
@@ -341,7 +238,7 @@ def main():
         # Return if minimum arbitrage percentage is not met
         if arbitrage <= args.rate:
             return
-        _sellExchange = exchange()
+        _sellExchange = exchange(_buyExchange)
         sellbook = sellBook()
         buybook = buyBook()
         print("Buybook {}\n Sellbook {}".format(buybook, sellbook))
@@ -371,7 +268,7 @@ def main():
             setTradesize(newTradesize)
 
         # Check if above min order size
-        # Fonctionnement normal du bot il achete et vend en binaire (arbitrage)
+        # Fonctionnement normal du bot il achète et vend en binaire (arbitrage)
         if (getTradesize() * _bid) > 0.0006001:  # less than 10$
 
             _logger.info(
@@ -398,9 +295,10 @@ def main():
                 poloniexWallet.setTargetBalance(poloniexWallet.getTargetBalance() - getTradesize())
 
             _logger.info(
-                "\nNouveau2 : \nBittrex BTC :  {:.8f} | Bittrex LUMEN: {:.8f}\nPoloniex BTC : {:.8f} | Poloniex LUMEN {:.8f}".format(
-                    bittrexWallet.getBaseBalance(), bittrexWallet.getTargetBalance(), poloniexWallet.getBaseBalance(),
-                    _sellBalance))
+                "\nNouveau2 : \nBittrex BTC :  {:.8f} | Bittrex LUMEN: {:.8f}\nPoloniex BTC : {:.8f} | Poloniex LUMEN "
+                "{:.8f}".format(bittrexWallet.getBaseBalance(), bittrexWallet.getTargetBalance(),
+                                poloniexWallet.getBaseBalance(),
+                                _sellBalance))
             _logger.info("Dryrun: skipping order")
 
         # pas assez pour acheter du XLM
@@ -421,8 +319,9 @@ def main():
             currentValues = poloniexAPI.api_query(TICK)
             print(currentValues[poloniexMarket.getPair()])
         except KeyboardInterrupt:
-            Logger.quit()
-        except:
+            _Logger.quit()
+        except KeyError:
+            traceback.print_exc()
             _logger.error('Failed to Query Poloniex API, Restarting Loop')
             continue
         poloBid = float(currentValues[poloniexMarket.getPair()]["highestBid"])
@@ -435,9 +334,10 @@ def main():
             print(summary)
 
         except KeyboardInterrupt:
-            Logger.quit()
+            _Logger.quit()
 
-        except:
+        except KeyError:
+            traceback.print_exc()
             _logger.error('Failed to Query Bittrex API, Restarting Loop')
             continue
 

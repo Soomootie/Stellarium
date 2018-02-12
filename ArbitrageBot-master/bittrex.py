@@ -620,7 +620,7 @@ class Bittrex(object):
 
     def get_balance_distribution(self):
         """
-        Used to view balance distibution
+        Used to view balance distribution
 
         Endpoints:
         1.1 NO Equivalent

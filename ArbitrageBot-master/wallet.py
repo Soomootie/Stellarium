@@ -7,7 +7,7 @@ class Wallet(object):
     def __init__(self, targetBalance=0, baseBalance=0, name=""):
         self.targetBalance = targetBalance
         self.baseBalance = baseBalance
-        self.transition = 0
+        self.transition = 0.0
         self.name = name
 
     def getTargetBalance(self):
