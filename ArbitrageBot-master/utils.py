@@ -22,11 +22,11 @@ def setupArgs():
         Return the arguments.
     """
     parser = argparse.ArgumentParser(description='Poloniex/Bittrex Arbitrage Bot')
-    parser.add_argument('-s', '--symbol', default='XRP', type=str, required=False,
+    parser.add_argument('-s', '--symbol', default='XLM', type=str, required=False,
                         help='symbol of your target coin [default: ?]')
     parser.add_argument('-b', '--basesymbol', default='BTC', type=str, required=False,
                         help='symbol of your base coin [default: BTC]')
-    parser.add_argument('-S', '--Symbol', default='XLM', type=str, required=False,
+    parser.add_argument('-S', '--Symbol', default='XRP', type=str, required=False,
                         help='symbol of you second target coin [default: ?]')
     parser.add_argument('-r', '--rate', default=1.0005, type=float, required=False,
                         help='minimum price difference, 1.01 is 1 percent price difference [default: 1.01]')
@@ -70,7 +70,7 @@ def transferTarget(sender_trade : Trade, receiver_trade : Trade):
     receiver_trade.getWallet().setTargetBalance(receiver_trade.getWallet().getTargetBalance() + getTradesize())
     sender_trade.getWallet().setTargetBalance()
     time.sleep(SEC)  # durée de l'envoi d'un portefeuille à un autre
-    transferInfo(sender_trade.getWallet().getTargetCurrency(), sender_trade, receiver_trade.getName())
+    transferInfo(sender_trade.getMarket().getTargetCurrency(), sender_trade, receiver_trade.getName())
 
 
 def book(_trade, trade: Trade):

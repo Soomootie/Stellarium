@@ -9,6 +9,7 @@ from configparser import ConfigParser, NoSectionError
 
 trading = (Bittrex, Poloniex)
 
+
 def loadConfigFile(logger, args, name=""):
     """
         Load a configuration from a file, if the file don't exist

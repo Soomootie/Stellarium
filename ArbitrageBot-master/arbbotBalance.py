@@ -10,7 +10,7 @@ from bittrex import *
 
 ## VARIABLES STATIQUES
 # rebalanced ratio
-RATIO_REBALANCED = 1.03
+RATIO_REBALANCED = 1.001
 
 
 def main():
@@ -50,10 +50,10 @@ def main():
             transferTarget(bittrexTrade if _buyExchange == BIT else poloniexTrade,
                            poloniexTrade if _buyExchange == BIT else bittrexTrade)
 
-            s_bit = bittrexAPI.get_marketsummary(bittrexMarket.getAcurrency())['result']
-            s_polo = poloniexAPI.api_query(TICK)
+            s_bit = getMarket(bittrexTrade)
+            s_polo = getMarket(poloniexTrade)
             _logger.debug("\n{:8} : {:.8f}\n{:8} : {:.8f}".format(BIT, float(s_bit[0]['Ask']), POLO,
-                                                                  float(s_polo[poloniexMarket.getAcurrency()]
+                                                                  float(s_polo[poloniexMarket.getAPair()]
                                                                         ["lowestAsk"])))
 
             # vend le XLM sur poloniex/bittrex
@@ -69,7 +69,7 @@ def main():
                           poloniexTrade if _buyExchange == BIT else bittrexTrade)
 
             # convert XRP poloniex/bittrex en BTC
-            amountCurrency = sellACurrency(bittrexTrade if _buyExchange == BIT else poloniexTrade)
+            amountCurrency = sellACurrency(bittrexTrade if _buyExchange == POLO else poloniexTrade) # here
             # buy XLM with BTC on poloniex/bittrex
             buyBaseWithCurrency(amountCurrency, bittrexTrade if _buyExchange == BIT else poloniexTrade)
 
