@@ -22,7 +22,7 @@ def setupArgs():
         Return the arguments.
     """
     parser = argparse.ArgumentParser(description='Poloniex/Bittrex Arbitrage Bot')
-    parser.add_argument('-s', '--symbol', default='XLM', type=str, required=False,
+    parser.add_argument('-s', '--symbol', default='STORJ', type=str, required=False,
                         help='symbol of your target coin [default: ?]')
     parser.add_argument('-b', '--basesymbol', default='BTC', type=str, required=False,
                         help='symbol of your base coin [default: BTC]')
@@ -65,7 +65,7 @@ def transferInfo(currency, trade, receiver):
                                                               trade.getWallet().getName(), receiver))
 
 
-def transferTarget(sender_trade : Trade, receiver_trade : Trade):
+def transferTarget(sender_trade: Trade, receiver_trade: Trade):
     setTradesize(sender_trade.getWallet().getTargetBalance())
     receiver_trade.getWallet().setTargetBalance(receiver_trade.getWallet().getTargetBalance() + getTradesize())
     sender_trade.getWallet().setTargetBalance()
@@ -106,7 +106,14 @@ def getMarket(trade: Trade):
     if isinstance(trade.getApi(), Bittrex):
         return trade.getApi().get_marketsummary(trade.getMarket().getPair())['result']
     elif isinstance(trade.getApi(), Poloniex):
-        return trade.getApi().api_query(TICK)
+        return trade.getApi().returnTicker()
+
+
+def getMarkets(trade: Trade):
+    if isinstance(trade.getApi(), Bittrex):
+        return trade.getApi().get_market_summaries()
+    if isinstance(trade.getApi(), Poloniex):
+        return trade.getApi().returnTicker()
 
 
 def getPrice(market, pair):
@@ -116,7 +123,7 @@ def getPrice(market, pair):
         return float(market[pair]['lowestAsk'])
 
 
-def tradeInfo(trade : str, currency : str, _trade : Trade, amount, price):
+def tradeInfo(trade: str, currency: str, _trade: Trade, amount, price):
     total = amount * price
     trade = "Vente" if trade == "sell" else "Achat"
     _trade.getLogger().critical(
@@ -136,7 +143,7 @@ def sellTarget(buy_trade: Trade, sell_trade: Trade):
     tradeInfo('sell', sell_trade.getMarket().getTargetCurrency(), buy_trade, amount, price)
 
 
-def buyACurrency(trade : Trade):
+def buyACurrency(trade: Trade):
     _summary = getMarket(trade)
     price = getPrice(_summary, trade.getMarket().getPair())
     trade.getWallet().setBaseBalance(trade.getWallet().getBaseBalance() - getTradesize())
@@ -145,7 +152,7 @@ def buyACurrency(trade : Trade):
     tradeInfo('buy', trade.getMarket().getTargetCurrency(), trade, getTradesize(), price)
 
 
-def sendACurrency(sender_trade : Trade, receiver_trade : Trade):
+def sendACurrency(sender_trade: Trade, receiver_trade: Trade):
     transferInfo(sender_trade.getMarket().getAcurrency(), sender_trade.getWallet().getTransition(),
                  receiver_trade.getName())
     sender_trade.getWallet().setTransition(sender_trade.getWallet().getTransition() - getTradesize())
@@ -153,7 +160,7 @@ def sendACurrency(sender_trade : Trade, receiver_trade : Trade):
     time.sleep(SEC)
 
 
-def sellACurrency(trade : Trade):
+def sellACurrency(trade: Trade):
     _summary = getMarket(trade)
     price = getPrice(_summary, trade.getMarket().getPair())
     sellCurrencyToBase = price * trade.getWallet().getTransition()
@@ -163,10 +170,29 @@ def sellACurrency(trade : Trade):
     return sellCurrencyToBase
 
 
-def buyBaseWithCurrency(amount, trade : Trade):
+def buyBaseWithCurrency(amount, trade: Trade):
     _summary = getMarket(trade)
     price = getPrice(_summary, trade.getMarket().getAPair())
     _amount = amount / price
     trade.getWallet().setTargetBalance(trade.getWallet().getTargetBalance() + _amount)
     tradeInfo('buy', trade.getMarket().getTargetCurrency(), trade, _amount, price)
     trade.getWallet().setBaseBalance(trade.getWallet().getBaseBalance() - amount)
+
+
+def sames(trade: Trade, trade1: Trade, logger):
+    result = []
+    summary = getMarkets(trade)
+    summary1 = getMarkets(trade1)
+    for i in summary1:
+        for j in summary['result']:
+            i_res = i.split('_')
+            j_res = j['MarketName'].split('-')
+            if i_res[1] == j_res[1]:
+                write = True
+                for k in result:
+                    if k == i_res[1]:
+                        write = False
+                        continue
+                if write:
+                    result.append(i_res[1])
+                    logger.info("{}".format(i_res[1]))

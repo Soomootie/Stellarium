@@ -17,7 +17,7 @@ def main():
     args = setupArgs()
 
     # Logger
-    _Logger = Logger('DEBUG', args)
+    _Logger = Logger('INFO', args)
     _logger = _Logger.getLoger()
 
     # Markets
@@ -26,7 +26,7 @@ def main():
 
     # Wallets
     bittrexWallet = Wallet(274.69, 0.126033, BIT)  # 200$ / 200$
-    poloniexWallet = Wallet(274.69, 0.0126033, POLO)  # 200$ / 200$
+    poloniexWallet = Wallet(274.69, 0.126033, POLO)  # 200$ / 200$
 
     bittrexAPI = Bittrex(None, None)
     poloniexAPI = Poloniex(None, None)
@@ -41,6 +41,9 @@ def main():
                                                                              args.max))
     if args.dryrun:
         _logger.info("Dryrun Mode Enabled (will not trade)")
+
+    # sames(bittrexTrade, poloniexTrade, _logger)
+    # time.sleep(30)
 
     def reBalance(_buyExchange, arbitrage):
 
@@ -188,7 +191,7 @@ def main():
 
         try:
             summary = bittrexAPI.get_marketsummary(bittrexMarket.getPair())['result'][0]
-            print(summary)
+            # print(summary)
 
         except KeyboardInterrupt:
             _Logger.quit()
